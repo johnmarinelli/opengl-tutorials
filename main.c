@@ -18,7 +18,7 @@ static const char* vertex_shader_text =
 "\n"
 "void main(){\n"
 "\n"
-" gl_position = MVP * vec4(vertexPosition_modelspace, 1);\n"
+" gl_Position = MVP * vec4(vertexPosition_modelspace, 1);\n"
 "\n"
 "}\n";
 
@@ -31,8 +31,8 @@ static const char* fragment_shader_text =
 "void main() \n"
 "{ \n"
 " \n"
-"  // Output color = red  \n"
-"  color = vec3(1,0,0); \n"
+"  // Output color = blue \n"
+"  color = vec3(0,0,1); \n"
 " \n"
 "} \n";
 
@@ -56,6 +56,7 @@ int main(int argc, char* args[]) {
     return -1;
   }
 
+	glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
@@ -74,7 +75,6 @@ int main(int argc, char* args[]) {
   }
 
   glfwMakeContextCurrent(window);
-  glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
   /* 
    * Initialize GLEW
@@ -84,8 +84,9 @@ int main(int argc, char* args[]) {
     return -1;
   }
 
-  // Black background
-  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+  glClearColor(0.0, 0.0, 0.15, 0.5);
 
   /* 
    * Initialize vertex array
@@ -93,23 +94,6 @@ int main(int argc, char* args[]) {
   GLuint vtx_ary_id;
   glGenVertexArrays(1, &vtx_ary_id);
   glBindVertexArray(vtx_ary_id);
-
-  // Data for vertex buffer
-  static const GLfloat vtx_buf_data[] = {
-    -1.0, -1.0, 0.0,
-    1.0, -1.0, 0.0,
-    0.0, 1.0, 0.0
-  };
-
-  // The vertex buffer.
-  GLuint vtx_buf;
-
-  // Generate 1 buffer.  Put resulting identifier in vtx_buf.
-  glGenBuffers(1, &vtx_buf);
-  glBindBuffer(GL_ARRAY_BUFFER, vtx_buf);
-
-  // Pass vertices to OpenGL
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vtx_buf_data), vtx_buf_data, GL_STATIC_DRAW);
 
   /*
    * Load shaders.
@@ -129,7 +113,7 @@ int main(int argc, char* args[]) {
   glAttachShader(program, vtx_shader);
   glAttachShader(program, frg_shader);
   glLinkProgram(program);
-  
+
   // Get handle of MVP variable from shader
   GLuint mtx_id = glGetUniformLocation(program,  "MVP");
 
@@ -138,17 +122,34 @@ int main(int argc, char* args[]) {
    */
   glm::mat4 model = glm::mat4(1.0);
   glm::mat4 view = glm::lookAt(
-    glm::vec3(4.0, 3.0, 3.0), // (4,3,3) in world space (eye)
-    glm::vec3(0.0, 0.0, 0.0), // (0,0,0) is origin (center)
-    glm::vec3(0.0, 1.0, 0.0)  // (0,1,0) is up vector
+    glm::vec3(4, 3, 3), // (4,3,3) in world space (eye)
+    glm::vec3(0, 0, 0), // (0,0,0) is origin (center)
+    glm::vec3(0, 1, 0)  // (0,1,0) is up vector
   );
   glm::mat4 proj = glm::perspective(
       glm::radians(45.0), // field of vision
-      1024.0 / 768.0,
+      4.0 / 3.0,
       0.1,
       100.0
   );
   glm::mat4 mvp = proj * view * model;
+
+  // Data for vertex buffer
+  static const GLfloat vtx_buf_data[] = {
+		-1.0f, -1.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f,
+		 0.0f,  1.0f, 0.0f,
+  };
+
+  // The vertex buffer.
+  GLuint vtx_buf;
+
+  // Generate 1 buffer.  Put resulting identifier in vtx_buf.
+  glGenBuffers(1, &vtx_buf);
+  glBindBuffer(GL_ARRAY_BUFFER, vtx_buf);
+
+  // Pass vertices to OpenGL
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vtx_buf_data), vtx_buf_data, GL_STATIC_DRAW);
 
   /*
    * Event loop
