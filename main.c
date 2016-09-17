@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "deps/linmath.h"
+#include "timer.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -132,7 +133,6 @@ int main(int argc, char* args[]) {
       0.1,
       100.0
   );
-  glm::mat4 mvp = proj * view * model;
 
   // Data for vertex buffer
   static const GLfloat vtx_buf_data[] = {
@@ -156,6 +156,12 @@ int main(int argc, char* args[]) {
    */
   do {
     glClear(GL_COLOR_BUFFER_BIT);
+
+    unsigned long ms = get_msec();
+    float r = cos(ms / 1000.0);
+
+    glm::mat4 rotated_model = glm::rotate(model, r, glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 mvp = proj * view * rotated_model;
     
     glUseProgram(program);
     glUniformMatrix4fv(mtx_id, 1, GL_FALSE, &mvp[0][0]);
