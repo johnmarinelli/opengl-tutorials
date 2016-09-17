@@ -4,9 +4,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "deps/linmath.h"
+#include "timer.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 static const char* vertex_shader_text =
 "#version 330 core \n"
@@ -18,7 +20,7 @@ static const char* vertex_shader_text =
 "\n"
 "void main(){\n"
 "\n"
-" gl_position = MVP * vec4(vertexPosition_modelspace, 1);\n"
+" gl_Position = MVP * vec4(vertexPosition_modelspace, 1);\n"
 "\n"
 "}\n";
 
@@ -35,6 +37,31 @@ static const char* fragment_shader_text =
 "  color = vec3(1,0,0); \n"
 " \n"
 "} \n";
+
+/*
+ * Returns a compiled glsl program id.
+ */
+GLuint load_shaders(const char* vertex_shader_text, const char* fragment_shader_text) {
+  /*
+   * Load shaders.
+   */
+  GLuint vtx_shader;
+  vtx_shader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vtx_shader, 1, &vertex_shader_text, NULL);
+  glCompileShader(vtx_shader);
+
+  GLuint frg_shader;
+  frg_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(frg_shader, 1, &fragment_shader_text, NULL);
+  glCompileShader(frg_shader);
+
+  GLuint program;
+  program = glCreateProgram();
+  glAttachShader(program, vtx_shader);
+  glAttachShader(program, frg_shader);
+  glLinkProgram(program);
+  return program;
+}
 
 static void error_callback(int error, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
@@ -111,49 +138,42 @@ int main(int argc, char* args[]) {
   // Pass vertices to OpenGL
   glBufferData(GL_ARRAY_BUFFER, sizeof(vtx_buf_data), vtx_buf_data, GL_STATIC_DRAW);
 
-  /*
-   * Load shaders.
-   */
-  GLuint vtx_shader;
-  vtx_shader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vtx_shader, 1, &vertex_shader_text, NULL);
-  glCompileShader(vtx_shader);
+  GLuint program = load_shaders(vertex_shader_text, fragment_shader_text);
 
-  GLuint frg_shader;
-  frg_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(frg_shader, 1, &fragment_shader_text, NULL);
-  glCompileShader(frg_shader);
-
-  GLuint program;
-  program = glCreateProgram();
-  glAttachShader(program, vtx_shader);
-  glAttachShader(program, frg_shader);
-  glLinkProgram(program);
-  
   // Get handle of MVP variable from shader
   GLuint mtx_id = glGetUniformLocation(program,  "MVP");
-
-  /*
-   * Model, view and projection matrices
-   */
-  glm::mat4 model = glm::mat4(1.0);
-  glm::mat4 view = glm::lookAt(
-    glm::vec3(4.0, 3.0, 3.0), // (4,3,3) in world space (eye)
-    glm::vec3(0.0, 0.0, 0.0), // (0,0,0) is origin (center)
-    glm::vec3(0.0, 1.0, 0.0)  // (0,1,0) is up vector
-  );
-  glm::mat4 proj = glm::perspective(
-      glm::radians(45.0), // field of vision
-      1024.0 / 768.0,
-      0.1,
-      100.0
-  );
-  glm::mat4 mvp = proj * view * model;
 
   /*
    * Event loop
    */
   do {
+    glm::mat4 model = glm::mat4(
+      glm::vec4(1.0, 0.0, 0.0, 0.0),
+      glm::vec4(0.0, 1.0, 0.0, 0.0),
+      glm::vec4(0.0, 0.0, 1.0, 0.0),
+      glm::vec4(0.0, 0.0, 0.0, 1.0)
+    );
+    /*
+     * Model, view and projection matrices
+     */
+    glm::mat4 view = glm::lookAt(
+      glm::vec3(4.0, 3.0, 3.0), // (4,3,3) in world space (eye)
+      glm::vec3(0.0, 0.0, 0.0), // (0,0,0) is origin (center)
+      glm::vec3(0.0, 1.0, 0.0)  // (0,1,0) is up vector
+    );
+    glm::mat4 proj = glm::perspective(
+      glm::radians(45.0), // field of vision
+      1024.0 / 768.0,
+      0.1,
+      100.0
+    );
+
+    unsigned long ms = get_msec();
+    float r = cos(ms / 1000.0);
+
+    glm::mat4 rotated_model = glm::rotate(model, r, glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 mvp = proj * view * rotated_model;
+
     glClear(GL_COLOR_BUFFER_BIT);
     
     glUseProgram(program);
