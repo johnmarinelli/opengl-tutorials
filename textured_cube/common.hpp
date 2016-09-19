@@ -393,7 +393,7 @@ void *load_ppm(FILE *fp, unsigned long *xsz, unsigned long *ysz) {
 		return 0;
 	}
 
-	if(!(pixels = malloc(w * h * sizeof *pixels))) {
+	if(!(pixels = (uint32*) malloc(w * h * sizeof *pixels))) {
 		fputs("malloc failed", fp);
 		fclose(fp);
 		return 0;

@@ -83,23 +83,11 @@ int main( void )
 
 	// Load the texture using any two methods
 	//GLuint Texture = loadBMP_custom("uvtemplate.bmp");
-	//GLuint Texture = loadBMP("uvtemplate.bmp");
+	GLuint Texture = loadBMP("uvtemplate.bmp");
 	//GLuint Texture = loadDDS("uvtemplate.DDS");
-
-  GLuinit Texture = 1;
-	glBindTexture(GL_TEXTURE_1D, Texture);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-
-  void* img = load_image("pal.ppm", 0, 0);
-
-  if (NULL = img) { printf("Error loading texture.\n"); return -1; }
-
-	glTexImage1D(GL_TEXTURE_1D, 0, 4, 256, 0, GL_BGRA, GL_UNSIGNED_BYTE, img);
-	free(img);
-
-	glEnable(GL_TEXTURE_1D);
+	glBindTexture(GL_TEXTURE_2D, Texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
