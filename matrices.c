@@ -41,9 +41,23 @@ static void error_callback(int error, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
+
+static float x_offset = 0.0;
+static float y_offset = 0.0;
+static float z_offset = 1.0;
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+  if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+    switch(key) {
+      case GLFW_KEY_A: x_offset += 0.1; break;
+      case GLFW_KEY_D: x_offset -= 0.1; break;
+      case GLFW_KEY_S: y_offset -= 0.1; break;
+      case GLFW_KEY_W: y_offset += 0.1; break;
+      case GLFW_KEY_ESCAPE: 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      default: break;
+    };
+  }
 }
 
 int main(int argc, char* args[]) {
@@ -63,6 +77,7 @@ int main(int argc, char* args[]) {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL 
 
+
   /*
    * Initialize OpenGL window
    */
@@ -76,6 +91,7 @@ int main(int argc, char* args[]) {
   }
 
   glfwMakeContextCurrent(window);
+  glfwSetKeyCallback(window, key_callback);
 
   /* 
    * Initialize GLEW
@@ -122,22 +138,20 @@ int main(int argc, char* args[]) {
    * Model, view and projection matrices
    */
   glm::mat4 model = glm::mat4(1.0);
-  glm::mat4 view = glm::lookAt(
-    glm::vec3(4, 3, 3), // (4,3,3) in world space (eye)
-    glm::vec3(0, 0, 0), // (0,0,0) is origin (center)
-    glm::vec3(0, 1, 0)  // (0,1,0) is up vector
-  );
+
   glm::mat4 proj = glm::perspective(
       glm::radians(45.0), // field of vision
       4.0 / 3.0,
       0.1,
       100.0
   );
+  
+	//glm::mat4 proj= glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f);
 
   // Data for vertex buffer
   static const GLfloat vtx_buf_data[] = {
-		-1.0f, -1.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f,
+    -1.0f, -1.0f, 0.0f,
+		 1.0f,  -1.0f, 0.0f,
 		 0.0f,  1.0f, 0.0f,
   };
 
@@ -160,8 +174,18 @@ int main(int argc, char* args[]) {
     unsigned long ms = get_msec();
     float r = cos(ms / 1000.0);
 
-    glm::mat4 rotated_model = glm::rotate(model, r, glm::vec3(0.0, 1.0, 0.0));
-    glm::mat4 mvp = proj * view * rotated_model;
+    glm::mat4 view = glm::lookAt(
+      glm::vec3(x_offset, y_offset, z_offset), // (4,3,3) in world space (eye)
+      glm::vec3(0.0, 0.0, 0.0), // (0,0,0) is origin (center)
+      glm::vec3(0.0, 1.0, 0.0)  // (0,1,0) is up vector
+    );
+
+    glm::mat4 rotated_model = glm::rotate(model, 0.0f, glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 translated_model = glm::translate(model, glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 scaled_model = glm::scale(model, glm::vec3(1.0, 1.0, 1.0));
+    glm::mat4 transformed_model = proj * view * scaled_model * rotated_model * translated_model;
+
+    glm::mat4 mvp = transformed_model;
     
     glUseProgram(program);
     glUniformMatrix4fv(mtx_id, 1, GL_FALSE, &mvp[0][0]);
@@ -174,8 +198,8 @@ int main(int argc, char* args[]) {
 
     glDisableVertexAttribArray(0);
 
-    glfwSwapBuffers(window);
     glfwPollEvents();
+    glfwSwapBuffers(window);
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 
   // Cleanup VBO
